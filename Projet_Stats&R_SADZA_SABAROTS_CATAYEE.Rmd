@@ -1,0 +1,156 @@
+---
+title: "Projet_Stat_&_R"
+author: "SABAROTS Erwan, SADZA Léa, CATAYEE Britany"
+date: "2023-04-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 1. Vérifier que la fonction f ainsi définie est une focntion de densité.
+
+Sur feuille
+
+## 2.  Déterminer la fonction de répartition, notée FX, associée.
+
+Sur feuille
+
+## 3. Calculer l’espérance et la variance de X si elles existent.
+
+Sur feuille
+
+## 4. Par la méthode des moments, déterminer un estimateur de θ
+
+Sur feuille
+
+## 5.  Cet estimateur est-il sans biais? Si non, en considérer une version sans biais et dans la
+suite, nous travaillerons avec la version sans biais.
+
+## 6. A partir du jeu de données, donner une estimation de θ.
+
+```{r}
+#Pour le bon fonctionnement du programme, il faut choisir le répertoire dans lequel se trouve le fichier data.txt
+#contenant le jeu de données
+#Puis, cliquer sur knit puis aller dans knit directory et choisir current Working directory
+
+Jeu_donnees <- read.table(file='data.txt',col.names = "valeurs") #recuperation des données
+theta<- (4/3)*mean(Jeu_donnees$valeurs) #calcule une estimation de θ avec le jeu de données
+theta
+```
+
+
+## 7. Donner un intervalle de confiance pour θ.
+
+Calcul de l'intervalle de confiance à 95%. 
+Le théorème de la limite centrale nous dit que si n est grand, on peut utiliser la même stratégie que pour la
+moyenne d’une loi normale.
+
+```{r}
+
+sigma<- sd(Jeu_donnees$valeurs) #calcul de l'écart type à l'aide du jeu de données
+n<-dim(Jeu_donnees)[1] #nombres d'observation
+alpha<-0.05 #(1-alpha)=0.95
+z<- qnorm(1-alpha/2) #quantile de la loi normal
+infI<-(theta- sigma*z/sqrt(n)) #calcul du minimum de l'intervalle 
+supI<-(theta+ sigma*z/sqrt(n)) #calcul du maximum de l'intervalle
+I <- paste("[", infI, ";", supI, "]", sep="")
+#un intervalle de  θ est :
+print(I)
+```
+
+## 8. Par la méthode de simulation par inversion, simulez 5000 observations de la variable X en utilisant l’estimation trouvée précédente.
+
+Fonction de répartition : Fx(t) = 0 si t<0; 
+                                = 3t/4θ si 0<= t <θ; 
+                                = (t+2θ)/4θ si θ<= t <2θ; 
+                                = 1 si t>=2θ
+                        
+
+Pour calculer l'inverse de la fonction de répartition, on résout Fx(x) = t
+et on trouve x= (4θt)/3 et x= 2θ(2t-1)(calcul sur feuille)
+
+On pose: Y=(4θ U)/3 si 0<= U<3/4 et Y=2θ(2U-1) 3/4<= U<1
+```{r}
+U<-runif(5000) #génère des nombres aléatoires à partir d'une distribution uniforme
+Y<-c() #création d'un vecteur vide pour stocker les valeurs de la variable Y
+for(i in 1:5000){
+  if(U[i]>=0 & U[i]<(3/4)){
+    Y[i]=(4*theta*U[i])/3 
+  }
+  else{
+    Y[i]=(2*theta)*(2* U[i] -1)
+  }
+}
+ 
+
+```
+
+## 9. A l’aide de la règle de Sturge, réaliser une représentation graphique adaptée.
+
+```{r}
+K<-1+3.322*log10(5000) #règle de Sturge
+
+H = hist(Y,plot=FALSE) #crée l'histogramme
+l = max(H$breaks) #prend la valeur de la plus grande
+
+hist(Y,freq=FALSE,breaks=K,xlim=c(0,l*1.01),ylim=c(0,0.8)) #affichage de l'histogramme
+
+
+```
+
+## 10. Vos simulations vous semblent t’elles correctes?
+
+```{r}
+#Tracer la fonction de densité sur le graphe précédent
+K<-1+3.322*log10(5000) #règle de Sturge
+
+H = hist(Y,plot=FALSE) #crée l'histogramme
+l = max(H$breaks) #prend la valeur de la plus grande
+
+hist(Y,freq=FALSE,breaks=K,xlim=c(0,l*1.01),ylim=c(0,0.8)) #affichage de l'histogramme
+
+x=seq(0,theta,0.01)  #création de l'intervalle [0,θ[ de la fonction de densité
+y=seq(theta,2*theta,0.01) #création de l'intervalle [θ,2θ[ de la fonction de densité
+f<-rep(3/(4*theta),length(x)) #création d'une vecteur contenant que 3/(4*theta) sur la longueur x
+g<-rep(1/(4*theta),length(y)) #création d'une vecteur contenant que 1/(4*theta) sur la longueur y
+lines(x,f,type = 'l',col='red',lwd=3,ylab='',xlim=c(0,l*1.01),ylim=c(0,0.8)) #trace la fonction de répartition sur [0,θ[
+lines(y,g,type = 'l',col='red',lwd=3,ylab='',xlim=c(0,l*1.01),ylim=c(0,0.8)) #trace la fonction de répartition sur [θ,2θ[
+
+```
+
+
+D'apès le graphe les simulations semblent correctes.
+
+
+## 11. Comment à partir de simulations estimer P(X ∈ [0.3; 0.6])?
+
+```{r}
+#on peut utiliser les simulations générées à la question 8.
+#On compte le nombre de simulations pour lesquelles la valeur de X est dans la classe [0.3; 0.6] 
+#et on divise par le nombre total de simulations.
+#Cela donne une estimation de la probabilité recherchée.
+
+P<-(sum((Y>=0.3 & Y<=0.6)))/5000
+P
+```
+
+## 12. Donner une estimation du biais et de l’erreur quadratique de l’estimateur considéré
+
+```{r}
+#Biais 
+biais<- mean(Jeu_donnees$valeurs)-theta
+biais
+
+#erreur quadratique
+Equadratique<- mean((Jeu_donnees$valeurs-theta)^2)
+Equadratique
+```
+
+
+En observant une erreur quadratique et un biais différent de 0, on en conclut que : 
+bien que l'estimateur soit sans biais théoriquement, il peut y avoir une certaine variabilité dans les données pouvant expliquer l'erreur quadratique et le biais observés en pratique. 
+On en conclut donc que les performances d'un estimateur peuvent varier en fonction des données utilisées et qu'il est donc requis d'évaluer le comportement de l'estimateur sur un ensemble de données représentatif avant de l'utiliser de manière fiable.
+    
